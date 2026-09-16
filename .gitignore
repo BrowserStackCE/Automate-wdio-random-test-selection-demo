@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Environment / credentials
+.env
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Logs
+*.log
+logs/
+
+# Test output
+test-results/
+allure-results/
+allure-report/
