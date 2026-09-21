@@ -11,12 +11,9 @@
  * invocation via the TARGET_DEVICE env var this script sets.
  */
 
-import { spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const { spawn } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 // ---- CONFIG ----
 const SPEC_DIR = path.join(__dirname, 'test', 'specs');

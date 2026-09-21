@@ -13,14 +13,19 @@ const DEVICES = {
 
 const device = DEVICES[process.env.TARGET_DEVICE || '1'];
 
-export const config = {
+exports.config = {
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
   hostname: 'hub.browserstack.com',
 
   services: [
     ['browserstack', {
-      browserstackLocal: false
+      browserstackLocal: false,
+      testObservability: true,
+      testObservabilityOptions: {
+        projectName: 'wdio random test selection updated',
+        buildName: process.env.BROWSERSTACK_BUILD_NAME || 'WDIO-Sample-Preferred'
+      }
     }]
   ],
 
@@ -40,7 +45,7 @@ export const config = {
       'bstack:options': {
         deviceName: device.deviceName,
         osVersion: device.osVersion,
-        projectName: 'WDIO BrowserStack Sample',
+        projectName: 'wdio random test selection updated',
         buildName: process.env.BROWSERSTACK_BUILD_NAME || 'WDIO-Sample-Preferred',
         sessionName: `Device ${process.env.TARGET_DEVICE || '1'} run`
       }

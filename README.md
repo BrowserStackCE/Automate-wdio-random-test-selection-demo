@@ -3,6 +3,10 @@
 A minimal WebdriverIO project demonstrating 10 tests running in parallel
 across two BrowserStack devices, with two selectable run modes.
 
+This project uses **CommonJS** (`require`/`module.exports`) throughout —
+there is no `"type": "module"` in `package.json`, so it works with plain
+`node`/`wdio` invocations without any ESM-related warnings.
+
 ## Setup
 
 ```bash

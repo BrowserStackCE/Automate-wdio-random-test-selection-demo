@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+const { expect } = require('chai');
 
 describe('Sample Test 6', () => {
   it('should load the BrowserStack demo site and verify the title', async () => {
@@ -7,9 +7,9 @@ describe('Sample Test 6', () => {
     expect(title).to.include('StackDemo');
   });
 
-  it('should find the app logo on the page', async () => {
-    const logo = await $('img[alt="logo"]');
-    await logo.waitForExist({ timeout: 10000 });
-    expect(await logo.isExisting()).to.be.true;
+  it('should find the search box on the page', async () => {
+    const searchBox = await $('input.px-4');
+    await searchBox.waitForDisplayed({ timeout: 10000 });
+    expect(await searchBox.isDisplayed()).to.be.true;
   });
 });

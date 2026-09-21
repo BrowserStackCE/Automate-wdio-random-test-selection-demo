@@ -7,11 +7,8 @@
 // Re-run the suite and check the console output: the 5/5 split is
 // re-shuffled every time this config loads.
 
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const fs = require('fs');
+const path = require('path');
 
 function shuffle(array) {
   const arr = [...array];
@@ -47,14 +44,19 @@ console.log(`Device 2 (iPhone 14)         -> ${device2Specs.length} spec(s):`, d
 
 const buildName = `WDIO-Sample-${new Date().toISOString().slice(0, 16).replace(':', '-')}`;
 
-export const config = {
+exports.config = {
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
   hostname: 'hub.browserstack.com',
 
   services: [
     ['browserstack', {
-      browserstackLocal: false
+      browserstackLocal: false,
+      testObservability: true,
+      testObservabilityOptions: {
+        projectName: 'wdio random test selection updated',
+        buildName
+      }
     }]
   ],
 
@@ -77,30 +79,32 @@ export const config = {
     {
       // Device 1 -- up to 5 sessions in parallel
       browserName: 'chrome',
-      specs: device1Specs,
       'bstack:options': {
         deviceName: 'Samsung Galaxy S23',
         osVersion: '13.0',
-        projectName: 'WDIO BrowserStack Sample',
+        projectName: 'wdio random test selection updated',
         buildName,
         sessionName: 'Device 1 run',
         debug: true,
         networkLogs: true
-      }
+      },
+      'wdio:maxInstances': 5,
+      specs: device1Specs
     },
     {
       // Device 2 -- up to 5 sessions in parallel
       browserName: 'safari',
-      specs: device2Specs,
       'bstack:options': {
         deviceName: 'iPhone 14',
         osVersion: '16',
-        projectName: 'WDIO BrowserStack Sample',
+        projectName: 'wdio random test selection updated',
         buildName,
         sessionName: 'Device 2 run',
         debug: true,
         networkLogs: true
-      }
+      },
+      'wdio:maxInstances': 5,
+      specs: device2Specs
     }
   ]
 };

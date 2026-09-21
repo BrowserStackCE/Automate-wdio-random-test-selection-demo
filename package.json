@@ -2,7 +2,6 @@
   "name": "wdio-browserstack-sample",
   "version": "1.0.0",
   "description": "Sample WebdriverIO + BrowserStack project running 10 tests in parallel across 2 devices (5 each, randomized split)",
-  "type": "module",
   "scripts": {
     "test": "wdio run ./wdio.conf.js",
     "test:preferred": "node run-tests.js"
@@ -13,6 +12,6 @@
     "@wdio/mocha-framework": "^9.0.0",
     "@wdio/spec-reporter": "^9.0.0",
     "@wdio/browserstack-service": "^9.0.0",
-    "chai": "^5.1.1"
+    "chai": "^4.4.1"
   }
 }
