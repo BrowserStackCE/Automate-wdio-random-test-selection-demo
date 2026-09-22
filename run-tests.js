@@ -5,46 +5,62 @@
  * device 1 has no free parallel slot. Every spec runs exactly once.
  *
  * Usage:
- *   npm run test:preferred
+ *   SUITE=priorityFt npm run test:preferred
  *
  * Uses wdio.preferred.conf.js, which picks a single device per
  * invocation via the TARGET_DEVICE env var this script sets.
  */
 
 const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const glob = require('glob');
 
 // ---- CONFIG ----
-const SPEC_DIR = path.join(__dirname, 'test', 'specs');
 const WDIO_CONFIG = './wdio.preferred.conf.js';
 const DEVICE_LIMITS = { '1': 5, '2': 5 }; // max parallel sessions per device
+
+// Define your test suites here
+const suites = {
+  A: ['test/suites/suite-a/**/*.js'],
+  B: ['test/suites/suite-b/**/*.js'],
+  C: ['test/suites/suite-c/**/*.js'],
+  priorityFt: [
+    'tests/ui/e2e/patient_onboarding/query-param-cookies*.js',
+    'tests/ui/e2e/patient_onboarding/generated_tests/*-st.spec.js'
+  ],
+  default: ['test/specs/**/*.js'] // Fallback to all specs
+};
 // -----------------
 
-function findSpecs(dir) {
-  let results = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      results = results.concat(findSpecs(full));
-    } else if (entry.name.endsWith('.js')) {
-      results.push(full);
-    }
+function shuffle(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return results;
+  return arr;
 }
 
-const queue = findSpecs(SPEC_DIR);
+function findSpecs(suiteName) {
+  const patterns = suites[suiteName] || suites.default;
+  let results = [];
+  patterns.forEach(pattern => {
+    results = results.concat(glob.sync(pattern, { absolute: true }));
+  });
+  return [...new Set(results)]; // Return unique files
+}
+
+const targetSuite = process.env.SUITE || 'default';
+const queue = shuffle(findSpecs(targetSuite));
 const running = { '1': 0, '2': 0 };
 let inFlight = 0;
 let hadFailure = false;
 
 if (queue.length === 0) {
-  console.log(`No spec files found in ${SPEC_DIR}`);
+  console.log(`No spec files found for suite: ${targetSuite}`);
   process.exit(0);
 }
 
-console.log(`Found ${queue.length} spec(s). Preferring device 1, overflow to device 2.\n`);
+console.log(`Found ${queue.length} spec(s) for suite '${targetSuite}'. Preferring device 1, overflow to device 2.\n`);
 
 function pickDevice() {
   if (running['1'] < DEVICE_LIMITS['1']) return '1';
