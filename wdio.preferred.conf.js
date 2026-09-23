@@ -1,22 +1,28 @@
 // wdio.preferred.conf.js
 //
-// Used only by run-tests.js (the "device 1 preferred, device 2 overflow"
-// orchestrator). Each invocation targets exactly ONE device and ONE spec,
-// chosen by the orchestrator via the TARGET_DEVICE env var. Not meant to
-// be run directly with `wdio run` for the full suite -- use `npm run
-// test:preferred` instead.
+// Run Mode 2: Device 1 Preferred — single wdio process, two capabilities.
+//
+// The orchestrator (run-tests.js) resolves the spec list, applies the
+// Device 1 priority assignment, then passes the two spec arrays via
+// environment variables (DEVICE1_SPECS / DEVICE2_SPECS as JSON arrays).
+//
+// A single wdio process with both capabilities means BrowserStack sees
+// one build — no race condition, no duplicate builds.
+//
+// Do NOT run this directly — use: npm run test:preferred [-- --suite=<name>]
 
-const DEVICES = {
-  '1': { deviceName: 'Samsung Galaxy S23', osVersion: '13.0', browserName: 'chrome' },
-  '2': { deviceName: 'iPhone 14', osVersion: '16', browserName: 'safari' }
-};
+const buildName = process.env.BROWSERSTACK_BUILD_NAME || 'WDIO-Preferred';
 
-const device = DEVICES[process.env.TARGET_DEVICE || '1'];
+const device1Specs = JSON.parse(process.env.DEVICE1_SPECS || '[]');
+const device2Specs = JSON.parse(process.env.DEVICE2_SPECS || '[]');
 
 exports.config = {
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
   hostname: 'hub.browserstack.com',
+
+  // Root specs list required by WDIO to initialise workers
+  specs: [...device1Specs, ...device2Specs],
 
   services: [
     ['browserstack', {
@@ -24,7 +30,7 @@ exports.config = {
       testObservability: true,
       testObservabilityOptions: {
         projectName: 'wdio random test selection updated',
-        buildName: process.env.BROWSERSTACK_BUILD_NAME || 'WDIO-Sample-Preferred'
+        buildName
       }
     }]
   ],
@@ -37,18 +43,40 @@ exports.config = {
   },
 
   logLevel: 'info',
-  maxInstances: 1, // the orchestrator controls concurrency, not wdio
+  waitforTimeout: 10000,
+  connectionRetryTimeout: 120000,
+  connectionRetryCount: 3,
 
   capabilities: [
     {
-      browserName: device.browserName,
+      // Device 1 (priority) — Samsung Galaxy S23, up to 5 parallel
+      browserName: 'chrome',
       'bstack:options': {
-        deviceName: device.deviceName,
-        osVersion: device.osVersion,
+        deviceName: 'Samsung Galaxy S23',
+        osVersion: '13.0',
         projectName: 'wdio random test selection updated',
-        buildName: process.env.BROWSERSTACK_BUILD_NAME || 'WDIO-Sample-Preferred',
-        sessionName: `Device ${process.env.TARGET_DEVICE || '1'} run`
-      }
+        buildName,
+        sessionName: 'Device 1 (priority) run',
+        debug: true,
+        networkLogs: true
+      },
+      'wdio:maxInstances': 5,
+      specs: device1Specs
+    },
+    {
+      // Device 2 (overflow) — iPhone 14, up to 5 parallel
+      browserName: 'safari',
+      'bstack:options': {
+        deviceName: 'iPhone 14',
+        osVersion: '16',
+        projectName: 'wdio random test selection updated',
+        buildName,
+        sessionName: 'Device 2 (overflow) run',
+        debug: true,
+        networkLogs: true
+      },
+      'wdio:maxInstances': 5,
+      specs: device2Specs
     }
   ]
 };

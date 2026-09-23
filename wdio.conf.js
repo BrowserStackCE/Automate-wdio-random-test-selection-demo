@@ -1,27 +1,18 @@
 // wdio.conf.js
 //
-// Runs specs based on the selected SUITE, split randomly 5/5 across two BrowserStack devices,
-// with each device allowed up to 5 parallel sessions -> 10 sessions running
-// at once in total.
+// Run Mode 1: Even parallel split.
+// Resolves specs for the requested SUITE, shuffles them, and splits 5/5
+// across two BrowserStack devices. All sessions run concurrently in one build.
 //
-// Re-run the suite and check the console output: the split is
-// re-shuffled every time this config loads.
+// Usage:
+//   npm test                        # default suite (test/specs/**/*.js)
+//   npm test -- --suite=A           # Suite A
+//   npm test -- --suite=priorityFt  # priorityFt suite
 
-const fs = require('fs');
-const path = require('path');
 const glob = require('glob');
 
-// Define your test suites here (must match run-tests.js)
-const suites = {
-  A: ['test/suites/suite-a/**/*.js'],
-  B: ['test/suites/suite-b/**/*.js'],
-  C: ['test/suites/suite-c/**/*.js'],
-  priorityFt: [
-    'tests/ui/e2e/patient_onboarding/query-param-cookies*.js',
-    'tests/ui/e2e/patient_onboarding/generated_tests/*-st.spec.js'
-  ],
-  default: ['test/specs/**/*.js'] // Fallback to all specs
-};
+const buildName = `WDIO-Sample-${new Date().toISOString().slice(0, 16).replace(':', '-')}`;
+const targetSuite = process.env.SUITE || 'default';
 
 function shuffle(array) {
   const arr = [...array];
@@ -32,17 +23,30 @@ function shuffle(array) {
   return arr;
 }
 
-function findSpecs(suiteName) {
-  const patterns = suites[suiteName] || suites.default;
+function findSpecs(suiteName, suiteDefs) {
+  const key = (suiteName && suiteDefs[suiteName]) ? suiteName : 'default';
+  const patterns = suiteDefs[key];
   let results = [];
   patterns.forEach(pattern => {
     results = results.concat(glob.sync(pattern, { absolute: true }));
   });
-  return [...new Set(results)]; // Return unique files
+  return [...new Set(results)];
 }
 
-const targetSuite = process.env.SUITE || 'default';
-const allSpecs = shuffle(findSpecs(targetSuite));
+// All suite definitions live here — single source of truth.
+// run-tests.js reads these via require('./wdio.conf.js').config.suites
+const suites = {
+  A: ['test/suites/suite-a/**/*.js'],
+  B: ['test/suites/suite-b/**/*.js'],
+  C: ['test/suites/suite-c/**/*.js'],
+  priorityFt: [
+    'tests/ui/e2e/patient_onboarding/query-param-cookies*.js',
+    'tests/ui/e2e/patient_onboarding/generated_tests/*-st.spec.js'
+  ],
+  default: ['test/specs/**/*.js']
+};
+
+const allSpecs = shuffle(findSpecs(targetSuite, suites));
 const mid = Math.ceil(allSpecs.length / 2);
 const device1Specs = allSpecs.slice(0, mid);
 const device2Specs = allSpecs.slice(mid);
@@ -52,12 +56,16 @@ console.log(`Total specs found: ${allSpecs.length}`);
 console.log(`Device 1 (Samsung Galaxy S23) -> ${device1Specs.length} spec(s):`, device1Specs);
 console.log(`Device 2 (iPhone 14)         -> ${device2Specs.length} spec(s):`, device2Specs, '\n');
 
-const buildName = `WDIO-Sample-${new Date().toISOString().slice(0, 16).replace(':', '-')}`;
-
 exports.config = {
   user: process.env.BROWSERSTACK_USERNAME,
   key: process.env.BROWSERSTACK_ACCESS_KEY,
   hostname: 'hub.browserstack.com',
+
+  // Exposed so run-tests.js can read suites without a separate file
+  suites,
+
+  // Root specs required by WDIO 9 to initialize workers
+  specs: device1Specs,
 
   services: [
     ['browserstack', {
@@ -81,9 +89,6 @@ exports.config = {
   waitforTimeout: 10000,
   connectionRetryTimeout: 120000,
   connectionRetryCount: 3,
-
-  // Sum of both devices' maxInstances below, so all 10 sessions can run at once.
-  maxInstances: 10,
 
   capabilities: [
     {
